@@ -1,0 +1,24 @@
+[
+    {
+      "dni": "1",
+      "fingerprint": "1111",
+      "salt": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "centerId": 1,
+      "mesaId": 2
+    },
+    {
+      "dni": "2",
+      "fingerprint": "2222",
+      "salt": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "centerId": 2,
+      "mesaId": 2
+    },
+    {
+      "dni": "3",
+      "fingerprint": "3333",
+      "salt": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "centerId": 1,
+      "mesaId": 3
+    }
+  ]
+  
