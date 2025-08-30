@@ -2,23 +2,17 @@
     {
       "dni": "1",
       "fingerprint": "1111",
-      "salt": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "centerId": 1,
-      "mesaId": 2
+      "salt": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     },
     {
       "dni": "2",
       "fingerprint": "2222",
-      "salt": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "centerId": 2,
-      "mesaId": 2
+      "salt": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
     },
     {
       "dni": "3",
       "fingerprint": "3333",
-      "salt": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-      "centerId": 1,
-      "mesaId": 3
+      "salt": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
     }
   ]
   

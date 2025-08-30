@@ -1,3 +1,5 @@
+// rnp-mock/index.js (CommonJS)
+// deps: express, cors, ethers
 const express = require("express");
 const cors = require("cors");
 const { ethers } = require("ethers");
@@ -8,54 +10,55 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const db = JSON.parse(fs.readFileSync(path.join(__dirname, "db.json"), "utf8"));
+// Estructura de db.json esperada:
+// [
+//   {"dni":"1","fingerprint":"1111","salt":"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+//   {"dni":"2","fingerprint":"2222","salt":"0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
+//   {"dni":"3","fingerprint":"3333","salt":"0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"}
+// ]
+const DB_PATH = path.join(__dirname, "db.json");
+const db = JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
 
-// leaf(dni, salt, centerId, mesaId)
-function leafFor(dni, saltHex, centerId, mesaId) {
-  const dniHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(dni));
-  return ethers.utils.solidityKeccak256(
-    ["bytes32","bytes32","uint32","uint32"],
-    [saltHex, dniHash, centerId, mesaId]
-  );
+// Helper seguro: genera la hoja global sin center/mesa.
+// leaf = keccak256( bytes32 salt, bytes32 keccak256(dniAscii) )
+function leafFor(dni, saltHex) {
+  if (!dni || !saltHex) throw new Error("dni o salt faltante");
+  if (typeof saltHex !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(saltHex)) {
+    throw new Error("salt inválido; debe ser 0x + 64 hex");
+  }
+  const dniHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(String(dni)));
+  return ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [saltHex, dniHash]);
 }
 
-// POST /verify {dni, fingerprint} -> {match, centerId, mesaId, leaf}
+// POST /verify { dni, fingerprint } -> { match, salt }
 app.post("/verify", (req, res) => {
+  try {
     const { dni, fingerprint } = req.body || {};
     if (!dni || !fingerprint) return res.status(400).json({ error: "dni y fingerprint requeridos" });
-    const rec = db.find(x => x.dni === dni);
+    const rec = db.find((x) => x.dni === String(dni));
     if (!rec) return res.json({ match: false });
-    const match = rec.fingerprint === fingerprint;
+    const match = rec.fingerprint === String(fingerprint);
     if (!match) return res.json({ match: false });
-  
-    // Devolvemos el salt para que el relayer derive un nulificador ciego
     return res.json({ match: true, salt: rec.salt });
-  });
-
-// GET /leaves?centerId=..&mesaId=.. -> hojas de esa mesa
-app.get("/leaves", (req, res) => {
-  const centerId = req.query.centerId ? parseInt(req.query.centerId) : undefined;
-  const mesaId   = req.query.mesaId   ? parseInt(req.query.mesaId)   : undefined;
-  let rows = db;
-  if (centerId !== undefined) rows = rows.filter(r => r.centerId === centerId);
-  if (mesaId !== undefined)   rows = rows.filter(r => r.mesaId === mesaId);
-  const leaves = rows.map(r => leafFor(r.dni, r.salt, r.centerId, r.mesaId));
-  res.json({ leaves });
+  } catch (e) {
+    console.error("/verify error:", e);
+    res.status(500).json({ error: "verify-failed" });
+  }
 });
 
-// (Opcional) catálogos para UI admin
-app.get("/centers", (_req, res) => {
-  // demo: deriva de db; en real sería una tabla de centros
-  const centers = Array.from(new Set(db.map(r => r.centerId))).map(id => ({ centerId: id, name: `Centro ${id}` }));
-  res.json({ centers });
+// GET /leaves -> { leaves: [...] }
+app.get("/leaves", (_req, res) => {
+  try {
+    const leaves = db.map((r) => leafFor(r.dni, r.salt));
+    res.json({ leaves });
+  } catch (e) {
+    console.error("/leaves error:", e);
+    res.status(500).json({ error: "leaves-failed" });
+  }
 });
 
-app.get("/mesas", (req, res) => {
-  const centerId = req.query.centerId ? parseInt(req.query.centerId) : undefined;
-  if (centerId === undefined) return res.status(400).json({ error: "centerId requerido" });
-  const mesas = Array.from(new Set(db.filter(r => r.centerId === centerId).map(r => r.mesaId))).sort();
-  res.json({ mesas });
-});
+// Salud
+app.get("/health", (_req, res) => res.json({ ok: true, count: db.length }));
 
 const PORT = 4000;
-app.listen(PORT, () => console.log(`RNP-mock http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`RNP-mock http://127.0.0.1:${PORT}`));
